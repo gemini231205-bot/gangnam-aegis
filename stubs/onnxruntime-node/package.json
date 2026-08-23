@@ -1,0 +1,6 @@
+{
+  "name": "onnxruntime-node",
+  "version": "1.24.3",
+  "description": "Stub: onnxruntime-node is not needed in browser builds. This empty package prevents the CUDA binary download that causes OOM during install.",
+  "main": "index.js"
+}
