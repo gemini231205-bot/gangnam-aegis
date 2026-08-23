@@ -55,7 +55,19 @@ const CORRECT_PROMPT = `당신은 한국어 음성 인식(STT) 오인식 교정 
 - 문장 부호 추가/변경
 - 출력에 설명, 이유, 메모, 주석 포함
 
-교정된 문장은 한국어 원어민이 읽었을 때 전혀 어색함이 없어야 합니다.`;
+교정된 문장은 한국어 원어민이 읽었을 때 전혀 어색함이 없어야 합니다.
+
+아래는 교정 예시입니다 (이 예시는 절대 출력에 포함하지 마세요):
+입력: 지금 담장 삼청만원만 이끌어줘
+출력: 지금 당장 삼천만원만 입금해줘
+
+입력: 엄마 차사고 갔는데 차주인이 100만원을 입금해 말해
+출력: 엄마 차 사고 났는데 차 주인이 100만 원을 입금해 달라고 해
+
+입력: 대포어 알려드릴게요
+출력: 계좌번호 알려드릴게요
+
+위 예시는 참고용이며, 실제 입력에 대해서만 교정된 텍스트만 출력하세요.`;
 
 const EXPLAIN_PATTERNS = [
   /원문에\s*존재하는/i,
@@ -67,6 +79,12 @@ const EXPLAIN_PATTERNS = [
   /원문에\s*없는/i,
   /그대로\s*유지/i,
   /수정하지\s*않았/i,
+];
+
+const FEW_SHOT_SENTENCES = [
+  '지금 당장 삼천만원만 입금해줘',
+  '엄마 차 사고 났는데 차 주인이 100만 원을 입금해 달라고 해',
+  '계좌번호 알려드릴게요',
 ];
 
 export async function correctTranscript(transcript: string): Promise<string> {
@@ -84,7 +102,7 @@ export async function correctTranscript(transcript: string): Promise<string> {
         model: 'solar-pro',
         messages: [
           { role: 'system', content: CORRECT_PROMPT },
-          { role: 'user', content: `다음 음성 인식 결과를 교정하세요. 설명 없이 교정된 텍스트만 출력하세요.\n\n입력: 지금 담장 삼청만원만 이끌어줘\n출력: 지금 당장 삼천만원만 입금해줘\n\n입력: 엄마 차사고 갔는데 차주인이 100만원을 입금해 말해\n출력: 엄마 차 사고 났는데 차 주인이 100만 원을 입금해 달라고 해\n\n입력: 대포어 알려드릴게요\n출력: 계좌번호 알려드릴게요\n\n입력: ${transcript}` },
+          { role: 'user', content: transcript },
         ],
         temperature: 0.1,
         max_tokens: 1000,
@@ -107,6 +125,12 @@ export async function correctTranscript(transcript: string): Promise<string> {
       const match = corrected.match(p);
       if (match && match.index !== undefined && match.index > 0) {
         corrected = corrected.slice(0, match.index).trim();
+      }
+    }
+
+    for (const fs of FEW_SHOT_SENTENCES) {
+      if (corrected.includes(fs) && !transcript.includes(fs)) {
+        corrected = corrected.replace(fs, '').trim();
       }
     }
 
